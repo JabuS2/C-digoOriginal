@@ -8,55 +8,58 @@
 
 namespace App\Helpers;
 
-use App\Model\Country;
-use App\Model\Post;
-use App\Model\Stream;
-use App\Model\Subscription;
-use App\Model\Tax;
-use App\Model\Transaction;
-use App\Model\UserMessage;
-use App\Providers\GenericHelperServiceProvider;
-use App\Providers\InvoiceServiceProvider;
-use App\Providers\NotificationServiceProvider;
-use App\Providers\PaymentsServiceProvider;
-use App\Providers\SettingsServiceProvider;
 use App\User;
 use DateTime;
 use DateTimeZone;
-use GuzzleHttp\Client;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
-use MercadoPago\Preference;
+use App\Model\Tax;
+use App\Model\Post;
 use MercadoPago\SDK;
-use PayPal\Api\Agreement;
-use PayPal\Api\AgreementStateDescriptor;
-use PayPal\Api\Amount;
-use PayPal\Api\ChargeModel;
-use PayPal\Api\Currency;
 use PayPal\Api\Item;
-use PayPal\Api\ItemList;
-use PayPal\Api\MerchantPreferences;
-use PayPal\Api\Patch;
-use PayPal\Api\PatchRequest;
-use PayPal\Api\Payer;
-use PayPal\Api\Payment;
-use PayPal\Api\PaymentDefinition;
-use PayPal\Api\PaymentExecution;
 use PayPal\Api\Plan;
-use PayPal\Api\RedirectUrls;
-use PayPal\Api\Transaction as PaypalTransaction;
-use PayPal\Auth\OAuthTokenCredential;
-use PayPal\Common\PayPalModel;
-use PayPal\Exception\PayPalConnectionException;
-use PayPal\Rest\ApiContext;
+use App\Model\Stream;
+use PayPal\Api\Patch;
+use PayPal\Api\Payer;
 use Ramsey\Uuid\Uuid;
-use Stripe\StripeClient;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Yabacon\Paystack;
+use App\Model\Country;
+use GuzzleHttp\Client;
+use PayPal\Api\Amount;
+use PayPal\Api\Payment;
+use PayPal\Api\Currency;
+use PayPal\Api\ItemList;
+use Stripe\StripeClient;
+use App\Services\SuitPay;
+use PayPal\Api\Agreement;
+use App\Model\Transaction;
+use App\Model\UserMessage;
+use App\Model\Subscription;
+use MercadoPago\Preference;
+use PayPal\Api\ChargeModel;
+use PayPal\Rest\ApiContext;
+use Illuminate\Http\Request;
+use PayPal\Api\PatchRequest;
+use PayPal\Api\RedirectUrls;
+use PayPal\Common\PayPalModel;
+use PayPal\Api\PaymentExecution;
+use PayPal\Api\PaymentDefinition;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
+use PayPal\Api\MerchantPreferences;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use PayPal\Auth\OAuthTokenCredential;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Redirect;
+use PayPal\Api\AgreementStateDescriptor;
+use App\Providers\InvoiceServiceProvider;
+use App\Providers\PaymentsServiceProvider;
+use App\Providers\SettingsServiceProvider;
 use Yabacon\Paystack\Exception\ApiException;
+use App\Providers\NotificationServiceProvider;
+use App\Providers\GenericHelperServiceProvider;
+use PayPal\Exception\PayPalConnectionException;
+use PayPal\Api\Transaction as PaypalTransaction;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class PaymentHelper
 {
@@ -932,7 +935,6 @@ class PaymentHelper
      */
     public function redirectByTransaction($transaction, $message = null)
     {
-
         // Not sure why translation locale is not being applied here, re-appliying it
         App::setLocale(GenericHelperServiceProvider::getPreferredLanguage());
 
@@ -967,9 +969,36 @@ class PaymentHelper
 
                 return $this->handleRedirectByTransaction($transaction, $recipient, $successMessage, $success = true);
                 // handles any other status
-            } else {
+            } 
+
+            // check if transaction is initiated and payment provider is suitpay
+            if ($transaction->status === Transaction::INITIATED_STATUS && $transaction->payment_provider === Transaction::SUITPAY_PROVIDER ) {
+                $successMessage = __('Your payment have been successfully initiated but needs to await for approval. Please scan the QR code below to complete the payment.');
+
+                if ($transaction->suitpay_payment_code != null && $transaction->type === Transaction::DEPOSIT_TYPE) {
+                    // collect suitpay payment data
+                    $sessionData = [
+                        'user_id' => auth()->user()->id,
+                        'amount' => $transaction->amount,
+                        'currency' => $transaction->currency,
+                        'transaction_id' => $transaction->id,
+                        'suitpay_payment_code' => $transaction->suitpay_payment_code,
+                        'suitpay_payment_transaction_id' => $transaction->suitpay_payment_transaction_id,
+                        'suitpay_payment_token' => $transaction->suitpay_payment_token,
+                    ];
+
+                    // store suitpay payment data in session
+                    Session::put('suitpay_payment_data', $sessionData);
+
+                    return $this->handleRedirectByTransaction($transaction, $recipient, $successMessage, $success = true);
+                }
+
                 return $this->handleRedirectByTransaction($transaction, $recipient, $errorMessage, $success = false);
+            
             }
+            
+            return $this->handleRedirectByTransaction($transaction, $recipient, $errorMessage, $success = false);
+            
         } else {
             return Redirect::route('feed')
                 ->with('error', $errorMessage);
@@ -1550,6 +1579,53 @@ class PaymentHelper
         return $transaction;
     }
 
+    public function generatePixPaymentTransaction($transaction, $user) 
+    {
+        $reference = self::generateSuitPayUniqueTransactionToken($transaction);
+
+        $data = [
+            'requestNumber' => $reference,
+            'dueDate' => now()->format('Y-m-d'),
+            'amount' => $transaction->amount,
+            'shippingAmount' => 0.0,
+            'discountAmount' => 0.0,
+            'usernameCheckout' => $user->username,
+            'callbackUrl' => route('payment.checkSuitpayPaymentStatus').'?token='.$reference,
+            'client' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'document' => '927.300.300-18',
+                'phone' => $user->phone,
+                'address' => [
+                    'codIbge' => '5208707',
+                    'street' => 'Rua Paraíba',
+                    'number' => '150',
+                    'complement' => '',
+                    'zipCode' => '74663-520',
+                    'neighborhood' => 'Goiânia 2',
+                    'city' => 'Goiânia',
+                    'state' => 'Go',
+                ]
+            ],
+        ];
+
+        $response = Http::withHeaders([
+            'ci' => config('services.suitpay.client_id'),
+            'cs' => config('services.suitpay.client_secret'),
+        ])->post('https://ws.suitpay.app/api/v1/gateway/request-qrcode', $data);
+
+
+        if ($response->successful()) {
+            $data = $response->json();
+            $transaction->suitpay_payment_transaction_id = $data['idTransaction'];
+            $transaction->suitpay_payment_code = $data['paymentCode'];
+            $transaction->save();
+        }
+    }
+
+
+    
+
     public function validateTransaction($transaction, $recipientUser) {
         $valid = false;
         if($transaction) {
@@ -1736,5 +1812,21 @@ class PaymentHelper
      */
     private function initiateMercadoPagoSdk() {
         SDK::setAccessToken(getSetting('payments.mercado_access_token'));
+    }
+
+    /**
+     * Generates Suitpay unique transaction token
+     * @param $transaction
+     * @return \Ramsey\Uuid\Type\Hexadecimal
+     */
+    private function generateSuitPayUniqueTransactionToken($transaction)
+    {
+        // generate unique token for transaction
+        do {
+            $id = Uuid::uuid4()->getHex();
+        } while (Transaction::query()->where('suitpay_payment_token', $id)->first() != null);
+        $transaction->suitpay_payment_token = $id;
+
+        return $id;
     }
 }

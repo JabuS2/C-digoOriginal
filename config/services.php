@@ -30,4 +30,9 @@ return [
         'region' => '',
     ],
 
+    'suitpay' => [
+        'client_id' => env('SUITPAY_CLIENT_ID'),
+        'client_secret' => env('SUITPAY_CLIENT_SECRET'),
+    ],
+
 ];

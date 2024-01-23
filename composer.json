@@ -29,6 +29,7 @@
         "pusher/pusher-php-server": "^5.0",
         "ramsey/uuid": "^4.2.2",
         "silviolleite/laravelpwa": "^2.0",
+        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/schema-org": "^3.9",
         "stripe/stripe-php": "^7.77",
         "symfony/http-client": "^6.0",

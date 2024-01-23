@@ -46,6 +46,7 @@ class PaymentsController extends Controller
      */
     public function initiatePayment(CreateTransactionRequest $request)
     {
+        // dd($request->all());
         $transactionType = $request->get('transaction_type');
         $redirectLink = null;
         // generate one time transaction
@@ -163,6 +164,8 @@ class PaymentsController extends Controller
                         $redirectLink = $this->paymentHandler->generatePaystackTransaction($transaction, Auth::user()->email);
                     } elseif($transaction['payment_provider'] == Transaction::MERCADO_PROVIDER) {
                         $redirectLink = $this->paymentHandler->generateMercadoTransaction($transaction);
+                    }elseif($transaction['payment_provider'] == Transaction::SUITPAY_PROVIDER) {
+                        $this->paymentHandler->generatePixPaymentTransaction($transaction, Auth::user());
                     }
                     break;
                 case Transaction::ONE_MONTH_SUBSCRIPTION:
@@ -923,5 +926,26 @@ class PaymentsController extends Controller
         }
 
         http_response_code(200);
+    }
+
+    /**
+     * Handles Pix payment execution
+     */
+    public function verifySuitpayTransaction(Request $request) 
+    {
+        info(['SUITPAY_CALLBACK' => $request->all()]);
+        
+        dd($request->all());
+
+        $transaction = Transaction::query()->where('suit_payment_token', $request->get('token'))->first();
+        if($transaction) {
+            $transaction->status = Transaction::APPROVED_STATUS;
+            $transaction->save();
+            $this->paymentHandler->creditReceiverForTransaction($transaction);
+            NotificationServiceProvider::createTipNotificationByTransaction($transaction);
+            NotificationServiceProvider::createPPVNotificationByTransaction($transaction);
+        }
+
+        return $this->paymentHandler->redirectByTransaction($transaction);
     }
 }

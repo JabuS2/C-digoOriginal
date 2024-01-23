@@ -65,6 +65,11 @@
                 <label class="custom-control-label stepTooltip" for="customRadio7" title="">{{__("Paystack")}}</label>
             </div>
         @endif
+        <div class="custom-control custom-radio mb-1">
+            <input type="radio" id="customRadio7" name="payment-radio-option" class="custom-control-input"
+                   value="payment-suitpay">
+            <label class="custom-control-label stepTooltip" for="customRadio7" title="">{{__("Pix Pay")}}</label>
+        </div>
         @if(getSetting('payments.stripe_secret_key') && getSetting('payments.stripe_public_key') && getSetting('payments.stripe_oxxo_provider_enabled'))
                 <div class="custom-control custom-radio mb-1">
                     <input type="radio" id="customRadio8" name="payment-radio-option" class="custom-control-input"
@@ -116,6 +121,25 @@
         @endif
     </div>
     <div class="payment-error error text-danger d-none mt-3">{{__('Please select your payment method')}}</div>
+
+    @if (Session::has('suitpay_payment_data') && Session::get('suitpay_payment_data')['user_id'] == Auth::user()->id)
+        <div class="mt-4 text-center">
+            {!! QrCode::size(140)->generate(Session::get('suitpay_payment_data')['suitpay_payment_code']); !!}
+            <p>
+                <a href="javascript:void(0)" onclick="copySuitpayPaymentCode('{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}')" data-suitpay-payment-code="{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}" class="btn btn-link  mr-0 mt-4">{{__('Scan the QR Code Or Click to copy code & Verify Payment')}}</a>
+            </p>
+        </div>
+
+        @php
+            if (Session::has('suitpay_payment_data')) {
+                $transaction = \App\Model\Transaction::where('id', Session::get('suitpay_payment_data')['transaction_id'])->first();
+
+                if ($transaction->created_at->diffInMinutes(now()) > 15) {
+                    Session::forget('suitpay_payment_data');
+                }
+            }
+        @endphp
+    @endif
     <button class="btn btn-primary btn-block rounded mr-0 mt-4 deposit-continue-btn" type="submit">{{__('Add funds')}}</button>
 </div>
 @include('elements.uploaded-file-preview-template')

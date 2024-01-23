@@ -37,6 +37,7 @@ class Transaction extends Model
     const PAYSTACK_PROVIDER = 'paystack';
     const OXXO_PROVIDER = 'oxxo';
     const MERCADO_PROVIDER = 'mercado';
+    const SUITPAY_PROVIDER = 'suitpay';
 
     const COINBASE_API_BASE_PATH = 'https://api.commerce.coinbase.com';
     const NOWPAYMENTS_API_BASE_PATH = 'https://api.nowpayments.io/v1/';
@@ -50,12 +51,14 @@ class Transaction extends Model
         self::PAYSTACK_PROVIDER,
         self::OXXO_PROVIDER,
         self::MERCADO_PROVIDER,
+        self::SUITPAY_PROVIDER
     ];
     const PENDING_PAYMENT_PROCESSORS = [
         self::COINBASE_PROVIDER,
         self::NOWPAYMENTS_PROVIDER,
         self::CCBILL_PROVIDER,
-        self::OXXO_PROVIDER
+        self::OXXO_PROVIDER.
+        self::SUITPAY_PROVIDER,
     ];
 
     const CCBILL_FLEX_FORM_BASE_PATH = 'https://api.ccbill.com/wap-frontflex/flexforms/';

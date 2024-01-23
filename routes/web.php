@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -141,6 +143,7 @@ Route::group(['middleware' => ['auth','verified','2fa']], function () {
         Route::get('/ccbill/status', ['uses' => 'PaymentsController@processCCBillTransaction', 'as'   => 'checkCCBillPaymentStatus']);
         Route::get('/paystack/status', ['uses' => 'PaymentsController@verifyPaystackTransaction', 'as'   => 'checkPaystackPaymentStatus']);
         Route::get('/mercado/status', ['uses' => 'PaymentsController@verifyMercadoTransaction', 'as'   => 'checkMercadoPaymentStatus']);
+        Route::get('/suitpay/status', ['uses' => 'PaymentsController@verifySuitpayTransaction', 'as'   => 'checkSuitpayPaymentStatus']);
     });
 
     // Feed routes

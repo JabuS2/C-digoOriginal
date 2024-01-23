@@ -101,6 +101,9 @@ var DepositSettings = {
               case "payment-mercado":
                 DepositSettings.provider = "mercado";
                 break;
+              case "payment-suitpay":
+                DepositSettings.provider = "suitpay";
+                break;
             }
             return DepositSettings.provider;
         }
@@ -260,3 +263,32 @@ var DepositSettings = {
         return !hasErrors;
     }
 };
+
+// create the copy to clipboard function
+function copyToClipboard(text) {
+    // create a textarea
+    var copyElement = document.createElement("textarea");
+
+    // set the text of the textarea to the text we want to copy
+    copyElement.textContent = text;
+
+    // append the textarea to the body
+    document.body.appendChild(copyElement);
+
+    // select the textarea
+    copyElement.select();
+
+    // copy the text
+    navigator.clipboard.writeText(copyElement.value);
+
+    // remove the textarea
+    document.body.removeChild(copyElement);
+}
+
+ function copySuitpayPaymentCode(paymentCode) {
+   // copy paymentCode to clipboard
+   copyToClipboard(paymentCode);
+
+   alert('Payment code copied to clipboard!')
+ }
+
