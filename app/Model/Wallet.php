@@ -2,6 +2,7 @@
 
 namespace App\Model;
 
+use App\WalletRetainedBalance;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,7 +17,7 @@ class Wallet extends Model
      * @var array
      */
     protected $fillable = [
-        'id', 'user_id', 'total'
+        'id', 'user_id', 'total', 'retained_balance'
     ];
 
     /**
@@ -47,6 +48,10 @@ class Wallet extends Model
         return $this->belongsTo('App\User', 'user_id');
     }
 
+    public function retainedBalances()
+    {
+        return $this->hasMany('App\Model\WalletRetainedBalance','wallet_id');
+    }
     /*
      * Virtual attributes
      */

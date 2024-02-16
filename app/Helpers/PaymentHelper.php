@@ -33,6 +33,7 @@ use PayPal\Api\Agreement;
 use App\Model\Transaction;
 use App\Model\UserMessage;
 use App\Model\Subscription;
+use App\Model\WalletRetainedBalance;
 use MercadoPago\Preference;
 use PayPal\Api\ChargeModel;
 use PayPal\Rest\ApiContext;
@@ -511,26 +512,32 @@ class PaymentHelper
     {
         if ($transaction->type != null && $transaction->status == Transaction::APPROVED_STATUS) {
             $user = User::query()->where('id', $transaction->recipient_user_id)->first();
-
+    
             if ($user != null) {
                 $userWallet = $user->wallet;
-
-                // Adding available balance
+    
+                // Calculando impostos e taxas
                 $taxes = PaymentsServiceProvider::calculateTaxesForTransaction($transaction);
                 $amountWithTaxesDeducted = $transaction->amount;
+                
                 if (isset($taxes['inclusiveTaxesAmount'])) {
-                    $amountWithTaxesDeducted = $amountWithTaxesDeducted - $taxes['inclusiveTaxesAmount'];
+                    $amountWithTaxesDeducted -= $taxes['inclusiveTaxesAmount'];
                 }
-
+    
                 if (isset($taxes['exclusiveTaxesAmount'])) {
-                    $amountWithTaxesDeducted = $amountWithTaxesDeducted - $taxes['exclusiveTaxesAmount'];
+                    $amountWithTaxesDeducted -= $taxes['exclusiveTaxesAmount'];
                 }
-                $walletData = ['total' => $userWallet->total + $amountWithTaxesDeducted];
-
+                if ($transaction->payment_provider === 'stripe' && $transaction->type !== 'deposit') {
+                    $walletData = ['retained_balance' => $userWallet->retained_balance + $amountWithTaxesDeducted];
+                } else {
+                    $walletData = ['total' => $userWallet->total + $amountWithTaxesDeducted];
+                }
+    
                 $userWallet->update($walletData);
             }
         }
     }
+    
 
     public function updateTransactionByStripeSessionId($sessionId)
     {
@@ -603,8 +610,7 @@ class PaymentHelper
         $existingSubscription = $this->getSubscriptionBySenderAndReceiverAndProvider(
             $transaction['sender_user_id'],
             $transaction['recipient_user_id'],
-            Transaction::STRIPE_PROVIDER
-        );
+            Transaction::STRIPE_PROVIDER);
 
         if ($existingSubscription != null) {
             $subscription = $existingSubscription;

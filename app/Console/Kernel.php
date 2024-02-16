@@ -39,6 +39,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('cron:renew_subscriptions')->hourly();
         $schedule->command('cron:resetOffers')->daily();
         $schedule->command('cron:process_expiring_streams')->everyFiveMinutes();
+        $schedule->command('balances:migrate-retained')->everyMinute();
         $schedule->command('cron:end_streams')->everyFiveMinutes();
         $schedule->command('generateSitemap')->daily();
     }

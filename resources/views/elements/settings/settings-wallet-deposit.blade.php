@@ -124,7 +124,7 @@
 
     @if (Session::has('suitpay_payment_data') && Session::get('suitpay_payment_data')['user_id'] == Auth::user()->id)
         <div class="mt-4 text-center">
-            {!! QrCode::size(140)->generate(Session::get('suitpay_payment_data')['suitpay_payment_code']); !!}
+            {!! QrCode::size(140)->generate(Session::get('suitpay_payment_data')['suitpay_payment_code']) !!}
             <p>
                 <a href="javascript:void(0)" onclick="copySuitpayPaymentCode('{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}')" data-suitpay-payment-code="{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}" class="btn btn-link  mr-0 mt-4">{{__('Scan the QR Code Or Click to copy code & Verify Payment')}}</a>
             </p>

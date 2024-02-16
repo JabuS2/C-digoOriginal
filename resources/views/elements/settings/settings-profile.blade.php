@@ -145,7 +145,7 @@
     </div>
 
     <div class="form-group">
-        <label for="website" value="{{Auth::user()->website}}">{{__('Website URL')}}</label>
+        <label for="website" value="{{Auth::user()->website}}">URL do Instagram</label>
         <input type="url" class="form-control {{ $errors->has('website') ? 'is-invalid' : '' }}" id="website" name="website" aria-describedby="emailHelp" value="{{Auth::user()->website}}">
         @if($errors->has('website'))
             <span class="invalid-feedback" role="alert">

@@ -22,7 +22,20 @@
 
     <div class="alert alert-primary text-white font-weight-bold" role="alert">
         <div class="d-flex"><h3 class="font-weight-bold wallet-total-amount">{{\App\Providers\SettingsServiceProvider::getWebsiteFormattedAmount(number_format(Auth::user()->wallet->total, 2, '.', ''))}}</h3> <small class="ml-2"></small> </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+    </div>
         <p class="mb-0">{{__('Available funds. You can deposit more money or become a creator to earn more.')}}</p>
+        
+        @if(getSetting('payments.withdrawal_allow_fees') && floatval(getSetting('payments.withdrawal_default_fee_percentage')) > 0)
+
+        @else
+            <h5></h5>
+        @endif
+        <div class="d-flex align-items-center">
+            <span class="text-right">
+                Saldo a receber {{\App\Providers\SettingsServiceProvider::getWebsiteFormattedAmount(number_format(Auth::user()->wallet->retained_balance, 2, '.', ''))}}
+            </span>
+        </div>
     </div>
 
     <div class="mt-3 inline-border-tabs">
@@ -42,6 +55,7 @@
                 </a>
             @endforeach
         </nav>
+        
     </div>
 
     @if($activeTab != null && $activeTab === 'withdraw' && \App\Providers\SettingsServiceProvider::allowWithdrawals(Auth::user()))

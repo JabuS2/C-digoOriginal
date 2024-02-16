@@ -177,7 +177,7 @@ class User extends \TCG\Voyager\Models\User implements MustVerifyEmail
 
     public function wallet()
     {
-        return $this->hasOne('App\Model\Wallet');
+        return $this->hasOne('App\Model\Wallet', 'user_id');
     }
 
     public function verification()
