@@ -303,6 +303,8 @@
 "with your content": "com seu conteúdo",
 "DMs unavailable without subscription" : "Mensagens diretas não disponíveis sem inscrição",
 
+"Your payment have been successfully initiated but needs to await for approval. Please scan the QR code below to complete the payment.": "Seu pagamento foi iniciado com sucesso, mas precisa aguardar aprovação. Por favor, leia o código QR abaixo para concluir o pagamento.",
+
 "Success": "Sucesso",
 "Error": "Erro",
 
@@ -382,7 +384,7 @@
 "chat-tip": "Gorjeta de chat",
 
 "post notification" : "Notificação de postagem",
-":name added a new comment on your" : ":name adicionou um novo comentário no seu",
+":name added a new comment on your" : ":name adicionou um novo comentário na sua",
 "Send you a message: `:message`": "Enviei uma mensagem para você: `:message`",
 "Hello, :name,":  "Olá, :name,",
 "You've received a new comment on one of your posts at :siteName." : "Você recebeu um novo comentário em uma de suas postagens em :siteName.",
@@ -394,7 +396,7 @@
 "Manage your subs": "Gerencie suas assinaturas",
 "sent you a tip of": "enviou uma gorjeta de",
 "You got a new tip!" : "Você recebeu uma nova gorjeta!",
-":name liked your": ":name curtiu o seu",
+":name liked your": ":name curtiu a sua",
 ":name liked your comment":":name curtiu o seu comentário.",
 "Withdrawal processed": "Seu saque de :currencySymbol:amount foi :status.",
 "Withdrawal processed rightAligned": "Seu saque de :amount:currencySymbol foi :status.",
@@ -492,7 +494,7 @@
 "Go home": "Ir para a página inicial",
 "Update":"Atualizar",
 
-"Before being able to publish an item, you need to complete your": "Antes de poder publicar um item, você precisa completar o seu",
+"Before being able to publish an item, you need to complete your": "Antes de poder publicar um item, você precisa completar a sua",
 "profile verification": "verificação de perfil",
 "Contact": "Contato",
 "Credit": "Crédito",
@@ -515,7 +517,8 @@
 
 "Please select an user first": "Por favor, selecione um usuário primeiro",
 "Please enter your message": "Por favor, digite sua mensagem",
-"These credentials do not match our records.": "Essas credenciais não coincidem com nossos registros.",
+
+"These credentials do not match our records.": "Essas credenciais não estão nos nossos registros.",
 
 "Suggestions list refreshed" : "Lista de sugestões atualizada",
 "Error fetching suggestions" : "Erro ao buscar sugestões",
@@ -907,7 +910,7 @@
 "Post scheduling": "Agendamento de postagem",
 "Post release date": "Data de lançamento da postagem",
 "Post expire date": "Data de expiração da postagem",
-"Someone unlocked your" : "Alguém desbloqueou o seu",
+"Someone unlocked your" : "Alguém desbloqueou a sua",
 "Your PPV content has been unlocked" : "Seu conteúdo de PPV foi desbloqueado",
 "stream": "transmissão",
 "message":"mensagem",

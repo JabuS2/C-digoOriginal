@@ -109,6 +109,7 @@ $(function () {
             checkout.togglePaymentProvider(showCCBillProvider, '.ccbill-payment-method');
             checkout.togglePaymentProvider(showStripeProvider, '.stripe-payment-method');
             checkout.togglePaymentProvider(showPaypalProvider, '.paypal-payment-method');
+            checkout.togglePaymentProvider(showPaypalProvider, '.suitpay-payment-method');
             checkout.togglePaymentProvider(showCreditProvider, '.credit-payment-method');
 
             $('.payment-body .checkout-amount-input').addClass('d-none');
@@ -174,7 +175,7 @@ $(function () {
  * Checkout class
  */
 var checkout = {
-    allowedPaymentProcessors: ['stripe', 'paypal', 'credit', 'coinbase', 'nowpayments', 'ccbill', 'paystack', 'oxxo', 'mercado'],
+    allowedPaymentProcessors: ['stripe', 'paypal', 'credit', 'coinbase', 'nowpayments', 'ccbill', 'paystack', 'oxxo', 'mercado', 'suitpay'],
     paymentData: {},
     oneTimePaymentProcessorClasses: [
         '.nowpayments-payment-method',
@@ -185,6 +186,7 @@ var checkout = {
         '.paystack-payment-method',
         '.oxxo-payment-method',
         '.mercado-payment-method',
+        '.suitpay-payment-method',
         '.credit-payment-method'
     ],
 
@@ -314,6 +316,7 @@ var checkout = {
         const paystackProvider = $('.paystack-payment-provider').hasClass('selected');
         const oxxoProvider = $('.oxxo-payment-provider').hasClass('selected');
         const mercadoProvider = $('.mercado-payment-provider').hasClass('selected');
+        const suitpayProvider = $('.suitpay-payment-provider').hasClass('selected');
         let val = null;
         if (paypalProvider) {
             val = 'paypal';
@@ -333,6 +336,8 @@ var checkout = {
             val = 'oxxo';
         } else if(mercadoProvider){
             val = 'mercado';
+        } else if(suitpayProvider){
+            val = 'suitpay';
         }
         if (val) {
             checkout.paymentData.provider = val;
@@ -648,3 +653,31 @@ var checkout = {
 
     },
 };
+
+// create the copy to clipboard function
+function copyToClipboard(text) {
+    // create a textarea
+    var copyElement = document.createElement("textarea");
+
+    // set the text of the textarea to the text we want to copy
+    copyElement.textContent = text;
+
+    // append the textarea to the body
+    document.body.appendChild(copyElement);
+
+    // select the textarea
+    copyElement.select();
+
+    // copy the text
+    navigator.clipboard.writeText(copyElement.value);
+
+    // remove the textarea
+    document.body.removeChild(copyElement);
+}
+
+ function copySuitpayPaymentCode(paymentCode) {
+   // copy paymentCode to clipboard
+   copyToClipboard(paymentCode);
+
+   alert('Payment code copied to clipboard!')
+ }

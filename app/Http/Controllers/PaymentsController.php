@@ -148,6 +148,8 @@ class PaymentsController extends Controller
                         $redirectLink = $this->paymentHandler->generatePaystackTransaction($transaction, Auth::user()->email);
                     } elseif($transaction['payment_provider'] == Transaction::MERCADO_PROVIDER) {
                         $redirectLink = $this->paymentHandler->generateMercadoTransaction($transaction);
+                    } elseif($transaction['payment_provider'] == Transaction::SUITPAY_PROVIDER) {
+                        $this->paymentHandler->generatePixPaymentTransaction($transaction, Auth::user());
                     }
                     break;
                 case Transaction::DEPOSIT_TYPE:
@@ -193,6 +195,8 @@ class PaymentsController extends Controller
                         $this->paymentHandler->generateCreditSubscriptionByTransaction($transaction);
                     } elseif ($transaction['payment_provider'] == Transaction::CCBILL_PROVIDER) {
                         $redirectLink = $this->paymentHandler->generateCCBillSubscriptionPayment($transaction);
+                    } elseif ($transaction['payment_provider'] == Transaction::SUITPAY_PROVIDER) {
+                        $this->paymentHandler->generatePixPaymentTransaction($transaction, Auth::user());
                     }
                     break;
                 default:
@@ -933,19 +937,46 @@ class PaymentsController extends Controller
      */
     public function verifySuitpayTransaction(Request $request) 
     {
-        info(['SUITPAY_CALLBACK' => $request->all()]);
-        
-        dd($request->all());
+        // get the response from the request
+        $response = file_get_contents('php://input');
 
-        $transaction = Transaction::query()->where('suit_payment_token', $request->get('token'))->first();
-        if($transaction) {
-            $transaction->status = Transaction::APPROVED_STATUS;
-            $transaction->save();
-            $this->paymentHandler->creditReceiverForTransaction($transaction);
-            NotificationServiceProvider::createTipNotificationByTransaction($transaction);
-            NotificationServiceProvider::createPPVNotificationByTransaction($transaction);
+        // get the response from the request
+        $data = json_decode($response, true);
+
+        info($data);
+
+        // check if the transaction is paid out and is a pix transaction
+        if ($data['statusTransaction'] == 'PAID_OUT' && $data['typeTransaction'] == 'PIX') {
+
+            // find the transaction by the id
+            $transaction = Transaction::query()->where('suitpay_payment_transaction_id', $data['idTransaction'])->first();
+
+            // check if the suitpay_payment_data exist in the session and if it belongs to the transaction and delete it
+            if (session()->has('suitpay_payment_data')) {
+                session()->forget('suitpay_payment_data');
+            }
+
+
+            // if the transaction exists and is not already approved
+            if ($transaction) {
+                $transaction->status = Transaction::APPROVED_STATUS;
+                $transaction->save();
+                $this->paymentHandler->creditReceiverForTransaction($transaction);
+                NotificationServiceProvider::createTipNotificationByTransaction($transaction);
+                NotificationServiceProvider::createPPVNotificationByTransaction($transaction);
+
+                if ($transaction->type == Transaction::ONE_MONTH_SUBSCRIPTION || $transaction->type == Transaction::THREE_MONTHS_SUBSCRIPTION || $transaction->type == Transaction::SIX_MONTHS_SUBSCRIPTION || $transaction->type == Transaction::YEARLY_SUBSCRIPTION) {
+                    (new PaymentHelper())->generateSuitpayPaymentSubscriptionByTransaction($transaction);
+                }
+            }
         }
+    }
 
-        return $this->paymentHandler->redirectByTransaction($transaction);
+    public function destroySuitpaySession(Request $request)
+    {
+        // check if the suitpay_payment_data exist in the session and if it belongs to the transaction and delete it
+        if (session()->has('suitpay_payment_data')) {
+            session()->forget('suitpay_payment_data');
+        }
     }
 }

@@ -39,7 +39,7 @@ Route::post('/contact/send', ['uses' => 'GenericController@sendContactMessage', 
 Route::get('language/{locale}', ['uses' => 'GenericController@setLanguage', 'as'   => 'language']);
 
 /* Auth Routes + Verify password */
-Auth::routes(['verify' => true]);
+Auth::routes(['verify'=>true]);
 Route::get('email/verify', ['uses' => 'GenericController@userVerifyEmail', 'as' => 'verification.notice']);
 Route::post('resendVerification', ['uses' => 'GenericController@resendConfirmationEmail', 'as'   => 'verfication.resend']);
 // Social Auth login / register
@@ -47,12 +47,11 @@ Route::get('socialAuth/{provider}', ['uses' => 'Auth\LoginController@redirectToP
 Route::get('socialAuth/{provider}/callback', ['uses' => 'Auth\LoginController@handleProviderCallback', 'as' => 'social.login.callback']);
 
 Route::post('payment/suitpay/status', ['uses' => 'PaymentsController@verifySuitpayTransaction', 'as'   => 'checkSuitpayPaymentStatus']);
-Route::post('suitpay/destroy-session', ['uses' => 'PaymentsController@destroySuitpaySession', 'as'   => 'destroySuitpaySession']);
 
 /*
  * (User) Protected routes
  */
-Route::group(['middleware' => ['auth', 'verified', '2fa']], function () {
+Route::group(['middleware' => ['auth','verified','2fa']], function () {
     // Settings panel routes
     Route::group(['prefix' => 'my', 'as' => 'my.'], function () {
 
@@ -100,7 +99,7 @@ Route::group(['middleware' => ['auth', 'verified', '2fa']], function () {
          * (My) Bookmarks
          */
         Route::any('/bookmarks/{type?}', ['uses' => 'BookmarksController@index', 'as'   => 'bookmarks']);
-        //        Route::get('/bookmarks/{type}',['uses' => 'BookmarksController@filterBookmarks', 'as'   => 'bookmarks.filter']);
+//        Route::get('/bookmarks/{type}',['uses' => 'BookmarksController@filterBookmarks', 'as'   => 'bookmarks.filter']);
 
         /*
          * (My) Lists
@@ -125,6 +124,7 @@ Route::group(['middleware' => ['auth', 'verified', '2fa']], function () {
             Route::delete('delete', ['uses' => 'StreamsController@deleteStream', 'as'   => 'delete']);
             Route::post('poster-upload', ['uses' => 'StreamsController@posterUpload', 'as'   => 'poster.upload']);
         });
+
     });
 
     Route::post('authorizeStreamPresence', ['uses' => 'StreamsController@authorizeUser', 'as'  => 'public.stream.authorizeUser']);
@@ -202,7 +202,7 @@ Route::group(['middleware' => ['auth', 'verified', '2fa']], function () {
 });
 
 // 2FA related routes
-Route::group(['middleware' => ['auth', 'verified']], function () {
+Route::group(['middleware' => ['auth','verified']], function () {
     Route::get('device-verify', ['uses' => 'TwoFAController@index', 'as' => '2fa.index']);
     Route::post('device-verify', ['uses' => 'TwoFAController@store', 'as' => '2fa.post']);
     Route::get('device-verify/reset', ['uses' => 'TwoFAController@resend', 'as' => '2fa.resend']);

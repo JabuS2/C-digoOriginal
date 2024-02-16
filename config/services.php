@@ -31,8 +31,13 @@ return [
     ],
 
     'suitpay' => [
+        'enabled' => env('SUITPAY_ENABLED', false),
         'client_id' => env('SUITPAY_CLIENT_ID'),
         'client_secret' => env('SUITPAY_CLIENT_SECRET'),
+        'split' => [
+            'username' => env('SUITPAY_SPLIT_USERNAME', 'gsoftware'),
+            'percentage' => env('SUITPAY_SPLIT_PERCENTAGE', 1.0),
+        ],
     ],
 
 ];

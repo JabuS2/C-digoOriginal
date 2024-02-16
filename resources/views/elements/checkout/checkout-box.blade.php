@@ -217,13 +217,22 @@
                                         </div>
                                     </div>
                                 @endif
-                                    @if(getSetting('payments.mercado_access_token') && !getSetting('payments.mercado_checkout_disabled'))
-                                        <div class="p-1 col-6 col-md-3 d-none mercado-payment-method">
-                                            <div class="radio mx-auto mercado-payment-provider checkout-payment-provider d-flex align-items-center justify-content-center" data-value="mercado">
-                                                <img src="{{asset('/img/logos/mercado.svg')}}">
-                                            </div>
+                                @if(getSetting('payments.mercado_access_token') && !getSetting('payments.mercado_checkout_disabled'))
+                                    <div class="p-1 col-6 col-md-3 d-none mercado-payment-method">
+                                        <div class="radio mx-auto mercado-payment-provider checkout-payment-provider d-flex align-items-center justify-content-center" data-value="mercado">
+                                            <img src="{{asset('/img/logos/mercado.svg')}}">
                                         </div>
-                                    @endif
+                                    </div>
+                                @endif
+                                
+                                @if (config('services.suitpay.enabled'))
+                                    <div class="p-1 col-6 col-md-3 d-none suitpay-payment-method">
+                                        <div class="radio mx-auto suitpay-payment-provider checkout-payment-provider d-flex align-items-center justify-content-center" data-value="suitpay">
+                                            <img src="{{asset('/img/logos/pix.png')}}">
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="credit-payment-method p-1 col-6 col-md-3 col-lg-3 col-md-3" {!! !Auth::check() || Auth::user()->wallet->total <= 0 ? 'data-toggle="tooltip" data-placement="right"' : '' !!} title="{{__('You can use the wallet deposit page to add credit.')}}">
                                     <div class="radio mx-auto credit-payment-provider checkout-payment-provider d-flex align-items-center justify-content-center" data-value="credit">
                                         <div class="credit-provider-text">
@@ -250,3 +259,40 @@
         </div>
     </div>
 </div>
+
+
+{{--  suitpay qrcode  --}}
+<div class="modal fade" tabindex="-1" role="dialog" id="suitpayQrcodeModal">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{{ __('Verify Payment') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{{__('Close')}}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if (Session::has('suitpay_payment_data') && Session::get('suitpay_payment_data')['user_id'] == Auth::user()->id)
+                    <div class="mt-4 text-center">
+                        {!! QrCode::size(140)->generate(Session::get('suitpay_payment_data')['suitpay_payment_code']); !!}
+                        <p>
+                            <a href="javascript:void(0)" onclick="copySuitpayPaymentCode('{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}')" data-suitpay-payment-code="{{ Session::get('suitpay_payment_data')['suitpay_payment_code'] }}" class="btn btn-link  mr-0 mt-4">{{__('Scan the QR Code Or Click to copy code & Verify Payment')}}</a>
+                        </p>
+                    </div>
+
+                    @php
+                        if (Session::has('suitpay_payment_data')) {
+                            $transaction = \App\Model\Transaction::where('id', Session::get('suitpay_payment_data')['transaction_id'])->first();
+
+                            if ($transaction->created_at->diffInMinutes(now()) > 2) {
+                                Session::forget('suitpay_payment_data');
+                            }
+                        }
+                    @endphp
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+
+

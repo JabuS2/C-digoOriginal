@@ -27,5 +27,6 @@ class VerifyCsrfToken extends Middleware
         'payment/paystackPaymentStatusUpdate',
         'payment/mercadoPaymentStatusUpdate',
         'beacon/feed',
+        'payment/suitpay/status',
     ];
 }

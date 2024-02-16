@@ -975,20 +975,22 @@ class PaymentHelper
             if ($transaction->status === Transaction::INITIATED_STATUS && $transaction->payment_provider === Transaction::SUITPAY_PROVIDER ) {
                 $successMessage = __('Your payment have been successfully initiated but needs to await for approval. Please scan the QR code below to complete the payment.');
 
-                if ($transaction->suitpay_payment_code != null && $transaction->type === Transaction::DEPOSIT_TYPE) {
-                    // collect suitpay payment data
-                    $sessionData = [
-                        'user_id' => auth()->user()->id,
-                        'amount' => $transaction->amount,
-                        'currency' => $transaction->currency,
-                        'transaction_id' => $transaction->id,
-                        'suitpay_payment_code' => $transaction->suitpay_payment_code,
-                        'suitpay_payment_transaction_id' => $transaction->suitpay_payment_transaction_id,
-                        'suitpay_payment_token' => $transaction->suitpay_payment_token,
-                    ];
+                // check if suitpay payment code is set and transaction type is deposit
+                if ($transaction->suitpay_payment_code != null 
+                        && $transaction->type === Transaction::DEPOSIT_TYPE 
+                        || $transaction->type === Transaction::TIP_TYPE 
+                        || $transaction->type === Transaction::CHAT_TIP_TYPE
+                        || $transaction->type === Transaction::POST_UNLOCK
+                        || $transaction->type === Transaction::STREAM_ACCESS
+                        || $transaction->type === Transaction::MESSAGE_UNLOCK
+                        || $transaction->type === Transaction::ONE_MONTH_SUBSCRIPTION 
+                        || $transaction->type === Transaction::THREE_MONTHS_SUBSCRIPTION
+                        || $transaction->type === Transaction::SIX_MONTHS_SUBSCRIPTION
+                        || $transaction->type === Transaction::YEARLY_SUBSCRIPTION
+                    ) {
 
-                    // store suitpay payment data in session
-                    Session::put('suitpay_payment_data', $sessionData);
+                    // set suitpay payment data to session
+                    $this->setSuitpayPaymentDataToSession($transaction);
 
                     return $this->handleRedirectByTransaction($transaction, $recipient, $successMessage, $success = true);
                 }
@@ -1590,7 +1592,7 @@ class PaymentHelper
             'shippingAmount' => 0.0,
             'discountAmount' => 0.0,
             'usernameCheckout' => $user->username,
-            'callbackUrl' => route('payment.checkSuitpayPaymentStatus').'?token='.$reference,
+            'callbackUrl' => route('checkSuitpayPaymentStatus'),
             'client' => [
                 'name' => $user->name,
                 'email' => $user->email,
@@ -1598,14 +1600,18 @@ class PaymentHelper
                 'phone' => $user->phone,
                 'address' => [
                     'codIbge' => '5208707',
-                    'street' => 'Rua Paraíba',
+                    'street' => $user->state,
                     'number' => '150',
                     'complement' => '',
-                    'zipCode' => '74663-520',
-                    'neighborhood' => 'Goiânia 2',
-                    'city' => 'Goiânia',
-                    'state' => 'Go',
+                    'zipCode' => $user->postcode,
+                    'neighborhood' => $user->city,
+                    'city' => $user->city,
+                    'state' => $user->state,
                 ]
+            ],
+            "split" => [
+                "username" => config('services.suitpay.split.username'),
+                "percentageSplit" => config('services.suitpay.split.percentage'),      
             ],
         ];
 
@@ -1829,4 +1835,56 @@ class PaymentHelper
 
         return $id;
     }
+
+    private function setSuitpayPaymentDataToSession($transaction)
+    {
+        // collect suitpay payment data
+        $sessionData = [
+            'user_id' => auth()->user()->id,
+            'amount' => $transaction->amount,
+            'currency' => $transaction->currency,
+            'transaction_id' => $transaction->id,
+            'suitpay_payment_code' => $transaction->suitpay_payment_code,
+            'suitpay_payment_transaction_id' => $transaction->suitpay_payment_transaction_id,
+            'suitpay_payment_token' => $transaction->suitpay_payment_token,
+        ];
+
+        // store suitpay payment data in session
+        return Session::put('suitpay_payment_data', $sessionData);
+    }
+
+
+    /**
+     * Generates Suitpay Subscription by transaction
+     */
+    public function generateSuitpayPaymentSubscriptionByTransaction($transaction)
+    {
+        $existingSubscription = $this->getSubscriptionBySenderAndReceiverAndProvider(
+            $transaction['sender_user_id'],
+            $transaction['recipient_user_id'],
+            Transaction::SUITPAY_PROVIDER
+        );
+
+        if ($existingSubscription != null) {
+            $subscription = $existingSubscription;
+        } else {
+            $subscription = $this->createSubscriptionFromTransaction($transaction);
+        }
+        $subscription['amount'] = $transaction['amount'];
+        $subscription['expires_at'] = new \DateTime('+' . PaymentsServiceProvider::getSubscriptionMonthlyIntervalByTransactionType($transaction->type) . ' months', new \DateTimeZone('UTC'));
+        $subscription['status'] = Subscription::ACTIVE_STATUS;
+        $transaction['status'] = Transaction::APPROVED_STATUS;
+
+        $subscription->save();
+
+        // only send the notification for new subs
+        if ($existingSubscription === null) {
+            NotificationServiceProvider::createNewSubscriptionNotification($subscription);
+        }
+        $transaction['subscription_id'] = $subscription['id'];
+
+        return $subscription;
+    }
+
+
 }

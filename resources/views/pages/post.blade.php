@@ -34,13 +34,80 @@
             '/js/posts/view.js',
          ])->withFullUrl()
     !!}
+
+<script>
+    // Verifica se os dados de pagamento da Suitpay estão definidos na sessão e exibe o modal do código QR da Suitpay
+    @if (Session::has('suitpay_payment_data') && Session::get('suitpay_payment_data')['user_id'] == Auth::user()->id)
+        $(document).ready(function() {
+            // Função para fechar o modal e recarregar a página
+            function closeAndReload() {
+                $('#suitpayQrcodeModal').modal('hide');
+                location.reload(true); // Use 'true' para recarregar a página do servidor
+            }
+
+            // Verifica se o modal já foi exibido anteriormente
+            if (localStorage.getItem('suitpayModalDisplayed') !== 'true') {
+                $('#suitpayQrcodeModal').modal('show');
+
+                // Adiciona um ouvinte de eventos para recarregar a página quando o modal for fechado manualmente
+                $('#suitpayQrcodeModal').on('hidden.bs.modal', function (e) {
+                    // Destrói a sessão e fecha o modal manualmente
+                    $.ajax({
+                        url: '/suitpay/destroy-session',
+                        type: 'POST',
+                        data: {
+                            _token: '{{csrf_token()}}'
+                        },
+                        success: function(response) {
+                            console.log(response);
+                            closeAndReload();
+                        },
+                        error: function() {
+                            closeAndReload();
+                        }
+                    });
+                });
+
+                // Oculta o modal após 30 segundos e destrói a sessão
+                setTimeout(function() {
+                    $.ajax({
+                        url: '/suitpay/destroy-session',
+                        type: 'POST',
+                        data: {
+                            _token: '{{csrf_token()}}'
+                        },
+                        success: function(response) {
+                            console.log(response);
+                            // Verifica se o pagamento foi bem-sucedido
+                            if (response.status === 'PAID_OUT') {
+                                // Define o indicador de que o modal foi exibido para evitar mostrá-lo novamente
+                                localStorage.setItem('suitpayModalDisplayed', 'true');
+                            }
+                            // Fecha o modal após a verificação do pagamento, mesmo que não seja bem-sucedido
+                            closeAndReload();
+                        },
+                        error: function() {
+                            // Em caso de erro na solicitação AJAX, também fecha o modal e recarrega a página
+                            closeAndReload();
+                        }
+                    });
+                }, 30000);
+            }
+        });
+    @endif
+</script>
+
 @stop
 
 @section('content')
     <div class="row">
         <div class="min-vh-100 col-12 col-md-8 border-right  pr-md-0">
             <div class="feed-box mt-0 pt-4 mb-3 posts-wrapper">
+
+                {{--  message alert  --}}
                 @include('elements.message-alert',['classes'=>'pt-0 pb-4 px-2'])
+
+                {{--  post box  --}}
                 @include('elements.feed.post-box')
             </div>
         </div>

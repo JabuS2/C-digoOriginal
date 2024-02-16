@@ -134,7 +134,7 @@
             if (Session::has('suitpay_payment_data')) {
                 $transaction = \App\Model\Transaction::where('id', Session::get('suitpay_payment_data')['transaction_id'])->first();
 
-                if ($transaction->created_at->diffInMinutes(now()) > 15) {
+                if ($transaction->created_at->diffInMinutes(now()) > 2) {
                     Session::forget('suitpay_payment_data');
                 }
             }
